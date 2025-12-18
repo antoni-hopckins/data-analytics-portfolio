@@ -1,0 +1,54 @@
+--количество свободных номеров на определенную дату с разбивкой по категориям	
+SELECT category.title, orders.check_in_date, COUNT(room_id)	
+FROM category JOIN room USING(category_id)	
+JOIN room_booking rb USING(room_id)	
+JOIN orders ON rb.orders_id = orders.id	
+WHERE orders.check_in_date = '2024-09-08'	
+AND orders.status = 'свободен'	
+GROUP BY category.title, orders.check_in_date	
+ORDER BY category.title;	
+	
+--список гостей, которые уже посещали нашу гостиницу и, которые не сделали ни одной брони в текущем году	
+SELECT guest.last_name 'Фамилия', guest.first_name 'Имя'	
+FROM guest JOIN room_booking rb USING(guest_id)	
+JOIN orders ON rb.orders_id = orders.id	
+JOIN payment ON orders.orders_id = payment.orders_id	
+WHERE YEAR((now)payment.id) <> YEAR(orders.check_in_date)	
+	
+	
+CREATE VIEW get_price_and_room(rb_id,  price)	
+AS (	
+SELECT room_booking.id, category.price	
+FROM category JOIN room USING(category_id)	
+JOIN room_booking USING(room_id)	
+),	
+get_price_and_service(rb_id, price)	
+AS (	
+SELECT room_booking.id, service.price	
+FROM service JOIN service_and_orders USING(service_id)	
+JOIN room_booking USING(service_and_orders_id)	
+),	
+get_date_data	
+AS (	
+SELECT room_booking.id,	
+	coalesce(check_out_date - check_in_date, 0) as date_data
+FROM orders JOIN service_and_orders USING(orders_id)	
+JOIN room_booking USING(service_and_orders_id)	
+),	
+SELECT rb_id 'Номер', ((get_price_and_room.price + get_price_and_service.price) * date_data) 'Цена', discount.id 'Скидка'	
+FROM get_price_and_room JOIN get_price_and_service USING(rb_id)	
+JOIN get_date_data USING(rb_id)	
+	
+	
+	
+select sum_price / sum(d.percent) * 100	
+(	
+select	
+case when date_part('month', start_booking) in ('яндварь, февраль') then 'ЗИМА!'	
+case when date_part('month', start_booking) in ('яндварь, февраль') then 'МНОГОДЕТНЫЕ'	
+case when date_part('month', start_booking) in ('яндварь, февраль') then 'ПРАЗДНИЧНЫЕ ДНИ'	
+else 0 as name	
+) x	
+	
+from discont d	
+where d.name = x.name

@@ -1,0 +1,180 @@
+DDL		
+CREATE DATABASE my_hotel;		
+		
+		
+--TABLE hotel		
+CREATE TABLE IF NOT EXISTS hotel(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+title VARCHAR (100) NOT NULL,		
+PRIMARY KEY (id)		
+);		
+		
+-- Создавать доп индексы в этой таблице не вижу смысла, т.к. не подразумевается, что она будет иметь много значений		
+		
+		
+		
+--TABLE guest		
+CREATE TABLE IF NOT EXISTS guest(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+first_name VARCHAR (100) NULL,		
+last_name VARCHAR (100) NULL,		
+email VARCHAR (100) UNIQUE NULL, --Ограничение на дубль email		
+PRIMARY KEY (id)		
+);		
+		
+--Добавление индекса на поля (last_name, email), для быстрого поиска по фамилии и email		
+CREATE INDEX idx_guest_last_name_email ON guest (last_name, email);		
+		
+		
+--TABLE category		
+CREATE TABLE IF NOT EXISTS category(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+title VARCHAR (45) NOT NULL,		
+price DECIMAL (9,2) NOT NULL,		
+PRIMARY KEY (id)		
+);		
+-- Создавать доп индексы в этой таблице не вижу смысла, т.к. не подразумевается, что она будет иметь много значений		
+		
+		
+--TABLE room		
+CREATE TABLE IF NOT EXISTS room(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+hotel_id INT NOT NULL,		
+category_id INT NOT NULL,		
+title VARCHAR (10) NOT NULL,		
+PRIMARY KEY (id),		
+CONSTRAINT fk_room_hotel_id		
+FOREIGN KEY (hotel_id)		
+REFERENCES hotel (id)		
+ON DELETE CASCADE,		
+CONSTRAINT fk_room_category_id		
+FOREIGN KEY (category_id)		
+REFERENCES category (id)		
+ON DELETE CASCADE		
+);		
+		
+-- Добавление индекса на hotel_id, для быстрого поиска отеля		
+CREATE INDEX idx_room_hotel_id ON room (hotel_id);		
+		
+-- Добавление индекса на category_id, для быстрого поиска номера по его категории		
+CREATE INDEX idx_room_category_id ON room (category_id);		
+		
+		
+--TABLE service		
+CREATE TABLE IF NOT EXISTS service(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+title VARCHAR (100) NULL,		
+price DECIMAL (9,2) NULL,		
+PRIMARY KEY (id)		
+);		
+		
+-- Создавать доп индексы в этой таблице не вижу смысла, т.к. не подразумевается, что она будет иметь много значений		
+		
+		
+--TABLE orders		
+CREATE TABLE IF NOT EXISTS orders(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+orders_date TIMESTAMP NOT NULL,		
+quntity INT NOT NULL,		
+children INT NULL,		
+check_in_date DATE NOT NULL,		
+check_out_date DATE NOT NULL,		
+status VARCHAR (45) DEFAULT 'свободен',		
+PRIMARY KEY (id)		
+);		
+		
+--Добавление индекса на check_in_date, для быстрого поиска даты заезда		
+CREATE INDEX idx_orders_check_in_date ON orders (check_in_date);		
+		
+		
+--TABLE discount		
+CREATE TABLE IF NOT EXISTS discount(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+title VARCHAR (100) NOT NULL,		
+start_date DATE NULL,		
+finish_date DATE NULL,		
+discount_percent INT NOT NULL,		
+PRIMARY KEY (id)		
+);		
+		
+-- Создавать доп индексы в этой таблице не вижу смысла, т.к. не подразумевается, что она будет иметь много значений		
+		
+		
+--TABLE payment		
+CREATE TABLE IF NOT EXISTS payment(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+titel VARCHAR (45) NOT NULL,		
+pay_date TIMESTAMP NOT NULL,		
+PRIMARY KEY (id)		
+);		
+		
+		
+--TABLE room_booking		
+CREATE TABLE IF NOT EXISTS room_booking(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+orders_id INT NOT NULL,		
+guest_id INT NOT NULL,		
+room_id INT NOT NULL,		
+PRIMARY KEY (id),		
+CONSTRAINT fk_room_booking_orders_id FOREIGN KEY (orders_id) REFERENCES orders (id)		
+ON DELETE CASCADE,		
+CONSTRAINT fk_room_booking_guest_id FOREIGN KEY (guest_id) REFERENCES guest (id)		
+ON DELETE CASCADE,		
+CONSTRAINT fk_room_booking_room_id FOREIGN KEY (room_id) REFERENCES room (id)		
+ON DELETE CASCADE,		
+);		
+		
+-- Добавление индекса на orders_id, для быстрого поиска id номера		
+CREATE INDEX idx_room_booking_orders_id ON room_booking (orders_id);		
+		
+-- Добавление индекса на guest_id, для быстрого поиска id гостя		
+CREATE INDEX idx_room_booking_guest_id ON room_booking (guest_id);		
+		
+-- Добавление индекса на room_id, для быстрого поиска id номера		
+CREATE INDEX idx_room_booking_room_id ON room_booking (room_id);		
+		
+		
+--TABLE service_and_orders		
+CREATE TABLE IF NOT EXISTS service_and_orders(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+orders_id INT NOT NULL,		
+service_id INT NOT NULL,		
+PRIMARY KEY (id),		
+CONSTRAINT fk_service_and_orders_orders_id FOREIGN KEY (orders_id) REFERENCES orders (id) ON DELETE CASCADE,		
+CONSTRAINT fk_service_and_orders_service_id FOREIGN KEY (service_id) REFERENCES service (id) ON DELETE CASCADE		
+);		
+		
+--Добавление индекса на orders_id, для быстрого поиска id заказа		
+CREATE INDEX idx_service_and_orders_orders_id ON service_and_orders (orders_id);		
+		
+--Добавление индекса на service_id, для быстрого поиска id услуги		
+CREATE INDEX idx_service_and_orders_service_id ON service_and_orders (service_id);		
+		
+		
+--TABLE orders_and_discount		
+CREATE TABLE IF NOT EXISTS orders_and_discount(		
+id INT GENERATED ALWAYS AS IDENTITY NOT NULL,		
+orders_id INT NOT NULL,		
+discount_id INT NOT NULL,		
+CONSTRAINT fk_total_and_discount_orders_id FOREIGN KEY (orders_id) REFERENCES orders (id) ON DELETE CASCADE,		
+CONSTRAINT fk_total_and_discount_discount_id FOREIGN KEY (discount_id) REFERENCES discount (id) ON DELETE CASCADE		
+);		
+		
+--Добавление индекса на orders_id, для быстрого поиска id заказа		
+CREATE INDEX idx_total_and_discount_orders_id ON total_and_discount (orders_id);		
+		
+--Добавление индекса на discount_id, для быстрого поиска id скидки		
+CREATE INDEX idx_total_and_discount_discount_id ON total_and_discount (discount_id);		
+		
+		
+--VIEW total		
+CREATE VIEW total		
+AS (		
+		
+price DECIMAL(9,2) NULL,		
+PRIMARY KEY (id),		
+CONSTRAINT fk_service_service_id FOREIGN KEY (service_id) REFERENCES service (id)		
+ON DELETE CASCADE,		
+CONSTRAINT fk_room_booking_room_booking_id FOREIGN KEY (room_booking_id) REFERENCES room_booking (id)		
+ON DELETE CASCADE		
+);

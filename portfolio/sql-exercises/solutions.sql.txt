@@ -1,0 +1,94 @@
+/* 
+Файл: solutions.sql
+Описание: Решения сложных SQL-задач с сайта sql-ex.ru
+Демонстрирует: работу с CTE, подзапросами, оконными функциями, UNION, INTERSECT.
+*/
+
+-- ==================== РАЗДЕЛ 1: Использование CTE (Common Table Expressions) ====================
+
+-- Задача: Найти модели с максимальной ценой среди всех типов продукции (ПК, ноутбуки, принтеры).
+-- Решение: Создаём общий временный набор (CTE) через UNION, затем фильтруем по максимальной цене.
+WITH Model_all AS (
+    SELECT model, price FROM PC
+    UNION
+    SELECT model, price FROM Laptop
+    UNION
+    SELECT model, price FROM Printer
+)
+SELECT model
+FROM Model_all 
+WHERE price >= (SELECT MAX(price) FROM Model_all);
+
+-- ==================== РАЗДЕЛ 2: Сложные подзапросы и соединения ====================
+
+-- Задача: Найти производителей принтеров, которые также производят ПК с минимальным RAM и максимальной скоростью в этой группе.
+-- Решение: Многоуровневые подзапросы для поиска по условиям, затем соединение результатов.
+SELECT DISTINCT PP.maker
+FROM (
+    SELECT maker
+    FROM Product
+    WHERE type = 'printer' 
+    AND maker IN (
+        SELECT maker 
+        FROM Product 
+        WHERE model IN (
+            SELECT model 
+            FROM PC
+            WHERE speed = (
+                SELECT MAX(speed)
+                FROM (
+                    SELECT speed 
+                    FROM PC 
+                    WHERE ram = (SELECT MIN(ram) FROM PC)
+                ) AS min_ram_pcs
+            )
+        )
+    )
+) AS PP 
+JOIN (
+    SELECT maker
+    FROM Product
+    WHERE type = 'pc' 
+    AND model IN (
+        SELECT model 
+        FROM PC 
+        WHERE ram = (SELECT MIN(ram) FROM PC)
+    )
+) AS PPC ON PP.maker = PPC.maker;
+
+-- ==================== РАЗДЕЛ 3: Агрегация и работа с датами (UNION для сводного отчёта) ====================
+
+-- Задача: Получить сводную таблицу прихода/расхода по пунктам на каждую дату.
+-- Решение: Объединяем таблицы Income и Outcome через UNION с преобразованием NULL, затем группируем.
+SELECT
+    point,
+    date,
+    SUM(out) AS outcome,
+    SUM(inc) AS income
+FROM (
+    SELECT code, point, date, inc, NULL AS out FROM Income
+    UNION
+    SELECT code, point, date, NULL AS inc, out FROM Outcome
+) AS get_table
+GROUP BY point, date;
+
+-- ==================== РАЗДЕЛ 4: Работа со строками и шаблонами (LIKE) ====================
+
+-- Задача: Найти модели, состоящие только из цифр ИЛИ только из латинских букв.
+-- Решение: Используем LIKE с отрицанием шаблонов для фильтрации.
+SELECT model, type
+FROM Product
+WHERE model NOT LIKE '%[^a-z]%'   -- Не содержит символов, кроме a-z
+   OR model NOT LIKE '%[^0-9]%';  -- Не содержит символов, кроме 0-9
+
+-- ==================== РАЗДЕЛ 5: Операции над множествами (INTERSECT) ====================
+
+-- Задача: Найти производителей, выпускающих и ПК, и ноутбуки со скоростью >= 750 МГц.
+-- Решение: Находим отдельные множества производителей, затем их пересечение.
+SELECT maker
+FROM Product JOIN PC ON PC.model = Product.model
+WHERE speed >= 750
+INTERSECT
+SELECT maker
+FROM Product JOIN Laptop ON Laptop.model = Product.model
+WHERE speed >= 750;

@@ -1,0 +1,61 @@
+-- 1. Отели
+INSERT INTO hotel (title) VALUES
+('Главный корпус'),
+('Бизнес-корпус');
+
+-- 2. Категории номеров
+INSERT INTO category (title, price) VALUES
+('Эконом', 5500.00),
+('Стандарт', 8500.00),
+('Люкс', 11500.00);
+
+-- 3. Гости
+INSERT INTO guest (first_name, last_name, email) VALUES
+('Алексей', 'Смирнов', 'alex.smirnov@example.com'),
+('Елена', 'Ковалева', 'elena.kovaleva@example.com'),
+('Дмитрий', 'Морозов', 'dmitry.morozov@example.com'),
+('Ольга', 'Ветрова', 'olga.vetrova@example.com');
+
+-- 4. Номера (со связями с отелем и категорией)
+INSERT INTO room (hotel_id, category_id, title) VALUES
+(1, 1, '101'), (1, 1, '102'), (1, 2, '201'), (1, 2, '202'),
+(1, 3, '301'), (2, 2, '101'), (2, 3, '201');
+
+-- 5. Услуги
+INSERT INTO service (title, price) VALUES
+('Завтрак шведский стол', 800.00),
+('Трансфер из аэропорта', 1200.00),
+('Спа-процедуры', 2500.00);
+
+-- 6. Скидки
+INSERT INTO discount (title, start_date, finish_date, discount_percent) VALUES
+('Раннее бронирование', '2024-01-01', '2024-12-31', 10),
+('Сезонная скидка (лето)', '2024-06-01', '2024-08-31', 15);
+
+-- 7. Заказы (orders)
+INSERT INTO orders (orders_date, quntity, children, check_in_date, check_out_date, status) VALUES
+('2024-08-20 10:00:00', 2, 0, '2024-09-08', '2024-09-10', 'свободен'),
+('2024-08-25 14:30:00', 1, 0, '2024-09-08', '2024-09-09', 'занят'),
+('2024-08-15 09:15:00', 4, 2, '2024-08-28', '2024-09-02', 'завершен');
+
+-- 8. Связь заказов и номеров (room_booking)
+INSERT INTO room_booking (orders_id, guest_id, room_id) VALUES
+(1, 1, 3), -- Алексей бронирует номер 201
+(1, 2, 4), -- Елена бронирует номер 202 (вместе с Алексеем)
+(2, 3, 6), -- Дмитрий бронирует номер 101 в бизнес-корпусе
+(3, 4, 5); -- Ольга бронирует люкс 301
+
+-- 9. Связь заказов и услуг (service_and_orders)
+INSERT INTO service_and_orders (orders_id, service_id) VALUES
+(1, 1), -- К бронированию Алексея добавлен завтрак
+(3, 1), (3, 2); -- К бронированию Ольги добавлены завтрак и трансфер
+
+-- 10. Связь заказов и скидок (orders_and_discount)
+INSERT INTO orders_and_discount (orders_id, discount_id) VALUES
+(1, 1); -- На бронь Алексея применена скидка "Раннее бронирование"
+
+-- 11. Оплаты (payment)
+INSERT INTO payment (titel, pay_date) VALUES
+('Оплата картой онлайн', '2024-08-20 10:05:00'),
+('Оплата наличными в отеле', '2024-08-25 15:00:00'),
+('Оплата картой онлайн', '2024-08-15 09:20:00');

@@ -1,0 +1,107 @@
+/* 
+Файл: solutions.sql
+Описание: Решения сложных SQL-задач с сайта stepik.org
+Демонстрирует: работу с CTE, подзапросами, оконными функциями, агрегацией, JOIN и DML-операциями.
+*/
+
+-- ==================== РАЗДЕЛ 1: Работа с DML (DELETE с подзапросом) ====================
+-- Задача: Удалить жанры, к которым относится меньше 4-х книг. В связанной таблице book для этих жанров установить NULL.
+-- Ключевые навыки: DELETE, коррелированный подзапрос с GROUP BY и HAVING.
+DELETE FROM genre
+WHERE genre_id IN (
+    SELECT genre_id
+    FROM book
+    GROUP BY genre_id
+    HAVING COUNT(title) < 4
+);
+
+
+-- ==================== РАЗДЕЛ 2: Агрегация данных и соединение таблиц (JOIN) ====================
+-- Задача: Вывести информацию о заказах: номер, клиент и общая стоимость.
+-- Ключевые навыки: INNER JOIN, агрегатная функция SUM, GROUP BY, псевдонимы (aliases).
+SELECT
+    buy.buy_id,
+    client.name_client,
+    SUM(buy_book.amount * book.price) AS Стоимость
+FROM buy
+    INNER JOIN client ON buy.client_id = client.client_id
+    INNER JOIN buy_book ON buy.buy_id = buy_book.buy_id
+    INNER JOIN book ON buy_book.book_id = book.book_id
+GROUP BY buy.buy_id, client.name_client
+ORDER BY buy.buy_id;
+
+
+-- ==================== РАЗДЕЛ 3: Условная логика и работа с NULL (CASE) ====================
+-- Задача: Посчитать дополнительные баллы абитуриентов, заменив NULL на 0.
+-- Ключевые навыки: LEFT JOIN, условное выражение CASE, агрегация с GROUP BY.
+SELECT
+    name_enrollee,
+    CASE
+        WHEN SUM(bonus) IS NULL THEN 0
+        ELSE SUM(bonus)
+    END AS Бонус
+FROM enrollee
+    LEFT JOIN enrollee_achievement USING(enrollee_id)
+    LEFT JOIN achievement USING(achievement_id)
+GROUP BY name_enrollee
+ORDER BY name_enrollee;
+
+
+-- ==================== РАЗДЕЛ 4: Константные значения и вычисления в SELECT ====================
+-- Задача: Подготовить список книг для распродажи (остаток < 4) с половинной ценой.
+-- Ключевые навыки: Константа в SELECT, арифметические операции, ROUND, фильтрация по диапазону (BETWEEN).
+SELECT
+    'Распродажа' AS Категория,
+    title AS Книга,
+    author AS Автор,
+    amount AS Количество,
+    ROUND(price / 2, 2) AS Цена
+FROM book
+WHERE amount BETWEEN 1 AND 3
+ORDER BY Цена DESC, Книга;
+
+
+-- ==================== РАЗДЕЛ 5: Использование CTE (Common Table Expressions) ====================
+-- Задача: Найти самые популярные книги (максимальное количество выдач) с использованием CTE.
+-- Ключевые навыки: CTE (WITH), вложенные CTE, JOIN, агрегатные функции.
+WITH get_count_title AS (
+    SELECT
+        book_id,
+        COUNT(borrow_date) AS count_b_d
+    FROM book
+        JOIN book_reader USING(book_id)
+    GROUP BY book_id
+),
+get_max AS (
+    SELECT MAX(count_b_d) AS max_count
+    FROM get_count_title
+)
+SELECT
+    title AS Название,
+    publisher_name AS Издательство,
+    year_publication AS Год,
+    count_b_d AS Количество
+FROM book
+    JOIN publisher USING(publisher_id)
+    JOIN get_count_title USING(book_id)
+    JOIN get_max ON count_b_d = max_count
+ORDER BY Название, Издательство, Год DESC;
+
+
+-- ==================== РАЗДЕЛ 6: Оконные функции (Window Functions) ====================
+-- Задача: Создать аналитический отчёт по остаткам книг с ранжированием.
+-- Ключевые навыки: Оконные функции (ROW_NUMBER, RANK, CUME_DIST, PERCENT_RANK),
+--                  условная логика для строк (CASE, CHAR_LENGTH, CONCAT).
+SELECT
+    ROW_NUMBER() OVER (ORDER BY amount, title) AS Nпп,
+    author AS Автор,
+    CASE
+        WHEN CHAR_LENGTH(title) > 15 THEN CONCAT(LEFT(title, 12), '...')
+        ELSE title
+    END AS Книга,
+    amount AS "Кол-во",
+    RANK() OVER (ORDER BY amount) AS Ранг,
+    ROUND(CUME_DIST() OVER (ORDER BY amount), 2) AS Распределение,
+    ROUND(PERCENT_RANK() OVER (ORDER BY amount) * 100, 2) AS "Ранг,%"
+FROM book
+ORDER BY amount, title;
